@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Icon Generator</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      min-height: 100vh;
+      background: #0f0f0f;
+      color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px;
+      gap: 28px;
+    }
+
+    h1 {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    h1 span {
+      background: linear-gradient(135deg, #fe2c55, #ff6b81);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    /* Drop zone */
+    .drop-zone {
+      width: 340px;
+      height: 180px;
+      border: 2px dashed #444;
+      border-radius: 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+      position: relative;
+    }
+
+    .drop-zone:hover,
+    .drop-zone.drag-over {
+      border-color: #fe2c55;
+      background: #1a0a0e;
+    }
+
+    .drop-zone input[type="file"] {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      cursor: pointer;
+    }
+
+    .drop-icon { font-size: 36px; }
+
+    .drop-label {
+      font-size: 14px;
+      color: #aaa;
+      text-align: center;
+      line-height: 1.5;
+    }
+
+    .drop-label strong { color: #fff; }
+
+    /* Preview row */
+    .preview-row {
+      display: flex;
+      gap: 24px;
+      align-items: flex-end;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .preview-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      opacity: 0.25;
+      transition: opacity 0.3s;
+    }
+
+    .preview-item.ready { opacity: 1; }
+
+    .preview-item canvas {
+      border-radius: 6px;
+      border: 1px solid #333;
+      image-rendering: pixelated;
+    }
+
+    .preview-label {
+      font-size: 12px;
+      color: #888;
+    }
+
+    /* Download buttons */
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #fe2c55, #ff6b81);
+      color: #fff;
+    }
+
+    .btn-secondary {
+      background: #2a2a2a;
+      color: #ccc;
+    }
+
+    .hint {
+      font-size: 12px;
+      color: #555;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Extension <span>Icon Generator</span></h1>
+
+  <!-- Drop zone -->
+  <div class="drop-zone" id="dropZone">
+    <input type="file" id="fileInput" accept="image/*" />
+    <div class="drop-icon">🖼️</div>
+    <div class="drop-label">
+      <strong>Click or drag an image here</strong><br>
+      PNG, JPG, SVG, WebP — any size
+    </div>
+  </div>
+
+  <!-- Previews -->
+  <div class="preview-row">
+    <div class="preview-item" id="item128">
+      <canvas id="canvas128" width="128" height="128"></canvas>
+      <div class="preview-label">icon128.png</div>
+    </div>
+    <div class="preview-item" id="item48">
+      <canvas id="canvas48" width="48" height="48"></canvas>
+      <div class="preview-label">icon48.png</div>
+    </div>
+    <div class="preview-item" id="item16">
+      <canvas id="canvas16" width="16" height="16"></canvas>
+      <div class="preview-label">icon16.png</div>
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <div class="btn-row">
+    <button class="btn btn-primary" id="btnAll" disabled>⬇ Download All 3 Icons</button>
+    <button class="btn btn-secondary" id="btn128" disabled>128px</button>
+    <button class="btn btn-secondary" id="btn48"  disabled>48px</button>
+    <button class="btn btn-secondary" id="btn16"  disabled>16px</button>
+  </div>
+
+  <div class="hint">Files will be named icon16.png, icon48.png, icon128.png — ready to drop into the icons/ folder</div>
+
+  <script>
+    const SIZES = [16, 48, 128];
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+
+    // Drag-over styling
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('drag-over');
+    });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) processFile(file);
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (fileInput.files[0]) processFile(fileInput.files[0]);
+    });
+
+    function processFile(file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => renderAll(img);
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function renderAll(img) {
+      SIZES.forEach(size => {
+        const canvas = document.getElementById(`canvas${size}`);
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, size, size);
+
+        // Draw image scaled to fit, centered (cover)
+        const scale = Math.max(size / img.width, size / img.height);
+        const w = img.width  * scale;
+        const h = img.height * scale;
+        const x = (size - w) / 2;
+        const y = (size - h) / 2;
+        ctx.drawImage(img, x, y, w, h);
+
+        // Mark ready
+        document.getElementById(`item${size}`).classList.add('ready');
+      });
+
+      // Enable buttons
+      document.getElementById('btnAll').disabled = false;
+      document.getElementById('btn128').disabled = false;
+      document.getElementById('btn48').disabled  = false;
+      document.getElementById('btn16').disabled  = false;
+    }
+
+    function downloadCanvas(size) {
+      const canvas = document.getElementById(`canvas${size}`);
+      const a = document.createElement('a');
+      a.href = canvas.toDataURL('image/png');
+      a.download = `icon${size}.png`;
+      a.click();
+    }
+
+    document.getElementById('btn128').addEventListener('click', () => downloadCanvas(128));
+    document.getElementById('btn48').addEventListener('click',  () => downloadCanvas(48));
+    document.getElementById('btn16').addEventListener('click',  () => downloadCanvas(16));
+
+    document.getElementById('btnAll').addEventListener('click', () => {
+      // Small delay between downloads so browser doesn't block them
+      SIZES.forEach((size, i) => {
+        setTimeout(() => downloadCanvas(size), i * 300);
+      });
+    });
+  </script>
+</body>
+</html>

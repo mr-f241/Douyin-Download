@@ -1,0 +1,42 @@
+{
+  "manifest_version": 3,
+  "name": "Tải Video Douyin",
+  "version": "2.0.0",
+  "description": "Tải tất cả video từ trang cá nhân Douyin — thanh bên phải",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "downloads",
+    "sidePanel",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://www.douyin.com/*"
+  ],
+  "action": {
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "Mở Tải Video Douyin"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "side_panel": {
+    "default_path": "sidebar.html"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.douyin.com/user/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
